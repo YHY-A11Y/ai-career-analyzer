@@ -2,7 +2,7 @@ import streamlit as st
 import urllib.request
 import json
 
-API_KEY = "AIzaSyDQh62ieTFXv-4dAPnnpynyej7Fgms0_0Y"
+API_KEY = st.secrets["AIzaSyByhxMD3K98H5g8gIsQWU8xUWxXi7ARhI8"]
 
 def AI职业分析(名字, 年龄, 技能, 行业):
     提示词 = f"""
