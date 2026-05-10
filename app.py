@@ -137,14 +137,11 @@ st.markdown("""
 # 分享功能
 st.divider()
 st.write("### 📤 分享结果")
-分享文本 = f"""
-🤖 AI职业分析报告
-
-姓名：{名字} | 年龄：{年龄}
-技能：{技能} | 目标行业：{行业}
+评分文字 = "\n".join([f"• {k}：{v}分" for k, v in 评分.items()])
+分享文本 = f"""🤖 AI职业分析报告
 
 📊 综合评分：
-{chr(10).join([f"• {k}：{v}分" for k, v in 评分.items()])}
+{评分文字}
 
 🔗 立即分析你的职业：
 https://ai-career-analyzer1.streamlit.app
