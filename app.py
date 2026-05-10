@@ -90,30 +90,21 @@ def 解析评分(文本):
 
 def 显示评分(评分):
     import plotly.graph_objects as go
-    
     指标 = list(评分.keys())
     分数 = list(评分.values())
-    
-    # 雷达图
     fig = go.Figure(data=go.Scatterpolar(
-        r=分数,
-        theta=指标,
-        fill='toself',
+        r=分数, theta=指标, fill='toself',
         fillcolor='rgba(108, 99, 255, 0.3)',
         line=dict(color='#6C63FF', width=2)
     ))
     fig.update_layout(
-        polar=dict(
-            radialaxis=dict(visible=True, range=[0, 100])
-        ),
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color='white')
     )
     st.plotly_chart(fig, use_container_width=True)
-    
-    # 评分卡片
     st.write("### 📊 综合评分")
     col1, col2 = st.columns(2)
     items = list(评分.items())
@@ -121,6 +112,13 @@ def 显示评分(评分):
         with col1 if i % 2 == 0 else col2:
             st.metric(指标名, f"{分}分")
             st.progress(分 / 100)
+
+def 显示分享(评分):
+    st.divider()
+    st.write("### 📤 分享结果")
+    评分文字 = "\n".join([f"• {k}：{v}分" for k, v in 评分.items()])
+    分享文本 = "🤖 AI职业分析报告\n\n📊 综合评分：\n" + 评分文字 + "\n\n🔗 立即分析你的职业：\nhttps://ai-career-analyzer1.streamlit.app"
+    st.text_area("复制以下内容发给朋友👇", 分享文本, height=200)
 
 st.markdown("""
 <style>
@@ -139,20 +137,14 @@ if "已登录" not in st.session_state:
 if "是管理员" not in st.session_state:
     st.session_state.是管理员 = False
 
-# ===== 管理员后台 =====
 def 显示管理员后台():
     st.title("🛠️ 管理员后台")
-    
     if st.button("退出管理员"):
         st.session_state.是管理员 = False
         st.rerun()
-    
     st.divider()
-    
-    # 用户统计
     用户数据 = 读取用户()
     全部历史 = 读取所有历史()
-    
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("📦 注册用户数", len(用户数据))
@@ -162,10 +154,7 @@ def 显示管理员后台():
         今日 = datetime.now().strftime("%Y-%m-%d")
         今日次数 = len([h for h in 全部历史 if h["时间"].startswith(今日)])
         st.metric("🔥 今日分析次数", 今日次数)
-    
     st.divider()
-    
-    # 所有用户列表
     st.write("### 👥 所有用户")
     for 用户名, 信息 in 用户数据.items():
         用户历史 = [h for h in 全部历史 if h.get("用户") == 用户名]
@@ -176,12 +165,9 @@ def 显示管理员后台():
             else:
                 st.write("暂无分析记录")
 
-# ===== 登录界面 =====
 def 显示登录界面():
     st.title("🤖 AI职业分析器")
-    
     tab登录, tab注册, tab管理 = st.tabs(["🔑 登录", "📝 注册", "🛠️ 管理员"])
-    
     with tab登录:
         用户名 = st.text_input("用户名", key="login_user")
         密码 = st.text_input("密码", type="password", key="login_pass")
@@ -196,7 +182,6 @@ def 显示登录界面():
                     st.error(消息)
             else:
                 st.warning("请填写用户名和密码！")
-
     with tab注册:
         新用户名 = st.text_input("用户名", key="reg_user")
         新密码 = st.text_input("密码", type="password", key="reg_pass")
@@ -215,7 +200,6 @@ def 显示登录界面():
                         st.error(消息)
             else:
                 st.warning("请填写所有信息！")
-
     with tab管理:
         管理密码 = st.text_input("管理员密码", type="password", key="admin_pass")
         if st.button("进入后台", use_container_width=True, key="admin_btn"):
@@ -225,7 +209,6 @@ def 显示登录界面():
             else:
                 st.error("密码错误！")
 
-# ===== 主程序 =====
 if st.session_state.是管理员:
     显示管理员后台()
 elif not st.session_state.已登录:
@@ -251,7 +234,6 @@ else:
         with col2:
             年龄 = st.text_input("年龄")
             行业 = st.text_input("目标行业")
-
         if st.button("开始分析 🚀", use_container_width=True):
             if 名字 and 年龄 and 技能 and 行业:
                 with st.spinner("AI正在分析，请稍等..."):
@@ -265,58 +247,50 @@ else:
                         st.write("### 📋 详细分析")
                         文字部分 = 结果[:结果.rfind("{")]
                         st.markdown(文字部分)
+                        显示分享(评分)
                     except Exception as e:
                         st.error(f"连接失败：{e}")
             else:
                 st.warning("请填写所有信息！")
+
     with tab2:
         st.write("上传你的简历PDF，AI自动解析并分析！")
         上传文件 = st.file_uploader("上传简历（PDF格式）", type=["pdf"])
-    
-    if 上传文件:
-        import PyPDF2
-        pdf读取器 = PyPDF2.PdfReader(上传文件)
-        简历文本 = ""
-        for 页 in pdf读取器.pages:
-            简历文本 += 页.extract_text()
-        
-        st.success("简历读取成功！")
-        with st.expander("查看简历内容"):
-            st.write(简历文本[:500] + "...")
-        
-        if st.button("AI分析简历 🚀", use_container_width=True):
-            with st.spinner("AI正在分析简历，请稍等..."):
-                try:
-                    提示词 = f"""
-                    请分析以下简历内容，给出职业发展建议：
-                    {简历文本[:2000]}
-                    
-                    请给出：
-                    1. 此人的核心优势
-                    2. 简历存在的不足
-                    3. 职业发展建议
-                    4. 适合的AI创业方向
-                    
-                    最后单独输出JSON（不要加代码块）：
-                    {{"技能匹配度": 85, "市场需求": 90, "创业潜力": 75, "发展速度": 80}}
-                    """
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
-                    data = json.dumps({
-                        "contents": [{"parts": [{"text": 提示词}]}]
-                    }).encode("utf-8")
-                    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-                    with urllib.request.urlopen(req, timeout=60) as response:
-                        result = json.loads(response.read().decode("utf-8"))
-                        结果 = result["candidates"][0]["content"]["parts"][0]["text"]
-                    
-                    st.success("分析完成！")
-                    评分 = 解析评分(结果)
-                    显示评分(评分)
-                    st.divider()
-                    文字部分 = 结果[:结果.rfind("{")]
-                    st.markdown(文字部分)
-                except Exception as e:
-                    st.error(f"连接失败：{e}")
+        if 上传文件:
+            import PyPDF2
+            pdf读取器 = PyPDF2.PdfReader(上传文件)
+            简历文本 = ""
+            for 页 in pdf读取器.pages:
+                简历文本 += 页.extract_text()
+            st.success("简历读取成功！")
+            with st.expander("查看简历内容"):
+                st.write(简历文本[:500] + "...")
+            if st.button("AI分析简历 🚀", use_container_width=True):
+                with st.spinner("AI正在分析简历，请稍等..."):
+                    try:
+                        提示词 = f"""
+                        请分析以下简历内容，给出职业发展建议：
+                        {简历文本[:2000]}
+                        请给出：1.此人的核心优势 2.简历存在的不足 3.职业发展建议 4.适合的AI创业方向
+                        最后单独输出JSON（不要加代码块）：
+                        {{"技能匹配度": 85, "市场需求": 90, "创业潜力": 75, "发展速度": 80}}
+                        """
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
+                        data = json.dumps({"contents": [{"parts": [{"text": 提示词}]}]}).encode("utf-8")
+                        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                        with urllib.request.urlopen(req, timeout=60) as response:
+                            result = json.loads(response.read().decode("utf-8"))
+                            结果 = result["candidates"][0]["content"]["parts"][0]["text"]
+                        st.success("分析完成！")
+                        评分 = 解析评分(结果)
+                        显示评分(评分)
+                        st.divider()
+                        文字部分 = 结果[:结果.rfind("{")]
+                        st.markdown(文字部分)
+                        显示分享(评分)
+                    except Exception as e:
+                        st.error(f"连接失败：{e}")
+
     with tab3:
         st.write("### 我的历史记录")
         历史 = 读取历史(用户名)
