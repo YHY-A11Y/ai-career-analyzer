@@ -89,13 +89,38 @@ def 解析评分(文本):
         return {"技能匹配度": 80, "市场需求": 75, "创业潜力": 70, "发展速度": 75}
 
 def 显示评分(评分):
+    import plotly.graph_objects as go
+    
+    指标 = list(评分.keys())
+    分数 = list(评分.values())
+    
+    # 雷达图
+    fig = go.Figure(data=go.Scatterpolar(
+        r=分数,
+        theta=指标,
+        fill='toself',
+        fillcolor='rgba(108, 99, 255, 0.3)',
+        line=dict(color='#6C63FF', width=2)
+    ))
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100])
+        ),
+        showlegend=False,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white')
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # 评分卡片
     st.write("### 📊 综合评分")
     col1, col2 = st.columns(2)
     items = list(评分.items())
-    for i, (指标, 分数) in enumerate(items):
+    for i, (指标名, 分) in enumerate(items):
         with col1 if i % 2 == 0 else col2:
-            st.metric(指标, f"{分数}分")
-            st.progress(分数 / 100)
+            st.metric(指标名, f"{分}分")
+            st.progress(分 / 100)
 
 st.markdown("""
 <style>
