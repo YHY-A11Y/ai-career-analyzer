@@ -7,11 +7,9 @@ from datetime import datetime
 
 API_KEY = st.secrets["API_KEY"]
 
-# 文件路径
 用户文件 = "users.json"
 历史文件 = "history.json"
 
-# ===== 用户系统 =====
 def 加密密码(密码):
     return hashlib.sha256(密码.encode()).hexdigest()
 
@@ -44,19 +42,17 @@ def 登录(用户名, 密码):
         return False, "密码错误！"
     return True, "登录成功！"
 
-# ===== 历史记录 =====
-def 读取历史(用户名):
+def 读取所有历史():
     if os.path.exists(历史文件):
         with open(历史文件, "r", encoding="utf-8") as f:
-            全部历史 = json.load(f)
-            return [h for h in 全部历史 if h.get("用户") == 用户名]
+            return json.load(f)
     return []
 
+def 读取历史(用户名):
+    return [h for h in 读取所有历史() if h.get("用户") == 用户名]
+
 def 保存历史(用户名, 名字, 年龄, 技能, 行业, 结果):
-    全部历史 = []
-    if os.path.exists(历史文件):
-        with open(历史文件, "r", encoding="utf-8") as f:
-            全部历史 = json.load(f)
+    全部历史 = 读取所有历史()
     全部历史.append({
         "用户": 用户名,
         "时间": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -69,25 +65,16 @@ def 保存历史(用户名, 名字, 年龄, 技能, 行业, 结果):
     with open(历史文件, "w", encoding="utf-8") as f:
         json.dump(全部历史, f, ensure_ascii=False, indent=2)
 
-# ===== AI分析 =====
 def AI职业分析(名字, 年龄, 技能, 行业):
     提示词 = f"""
     请用中文分析以下用户的职业发展建议：
     姓名：{名字}，年龄：{年龄}，技能：{技能}，目标行业：{行业}
-    
-    请给出：
-    1. 优势分析
-    2. 当前最大的挑战
-    3. 未来6个月的具体行动计划
-    4. 适合的AI创业方向
-    
+    请给出：1.优势分析 2.当前最大的挑战 3.未来6个月行动计划 4.适合的AI创业方向
     最后单独输出JSON（不要加代码块）：
     {{"技能匹配度": 85, "市场需求": 90, "创业潜力": 75, "发展速度": 80}}
     """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
-    data = json.dumps({
-        "contents": [{"parts": [{"text": 提示词}]}]
-    }).encode("utf-8")
+    data = json.dumps({"contents": [{"parts": [{"text": 提示词}]}]}).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as response:
         result = json.loads(response.read().decode("utf-8"))
@@ -110,12 +97,65 @@ def 显示评分(评分):
             st.metric(指标, f"{分数}分")
             st.progress(分数 / 100)
 
-# ===== 登录/注册界面 =====
+st.markdown("""
+<style>
+.stButton > button {
+    background: linear-gradient(90deg, #6C63FF, #3ECFCF);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+if "已登录" not in st.session_state:
+    st.session_state.已登录 = False
+if "是管理员" not in st.session_state:
+    st.session_state.是管理员 = False
+
+# ===== 管理员后台 =====
+def 显示管理员后台():
+    st.title("🛠️ 管理员后台")
+    
+    if st.button("退出管理员"):
+        st.session_state.是管理员 = False
+        st.rerun()
+    
+    st.divider()
+    
+    # 用户统计
+    用户数据 = 读取用户()
+    全部历史 = 读取所有历史()
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("📦 注册用户数", len(用户数据))
+    with col2:
+        st.metric("📋 总分析次数", len(全部历史))
+    with col3:
+        今日 = datetime.now().strftime("%Y-%m-%d")
+        今日次数 = len([h for h in 全部历史 if h["时间"].startswith(今日)])
+        st.metric("🔥 今日分析次数", 今日次数)
+    
+    st.divider()
+    
+    # 所有用户列表
+    st.write("### 👥 所有用户")
+    for 用户名, 信息 in 用户数据.items():
+        用户历史 = [h for h in 全部历史 if h.get("用户") == 用户名]
+        with st.expander(f"👤 {用户名} | 注册时间：{信息['注册时间']} | 分析次数：{len(用户历史)}"):
+            if 用户历史:
+                for 记录 in reversed(用户历史):
+                    st.write(f"- {记录['时间']} | {记录['姓名']} | {记录['技能']} → {记录['行业']}")
+            else:
+                st.write("暂无分析记录")
+
+# ===== 登录界面 =====
 def 显示登录界面():
     st.title("🤖 AI职业分析器")
-    st.write("请登录或注册以继续使用")
     
-    tab登录, tab注册 = st.tabs(["🔑 登录", "📝 注册"])
+    tab登录, tab注册, tab管理 = st.tabs(["🔑 登录", "📝 注册", "🛠️ 管理员"])
     
     with tab登录:
         用户名 = st.text_input("用户名", key="login_user")
@@ -131,7 +171,7 @@ def 显示登录界面():
                     st.error(消息)
             else:
                 st.warning("请填写用户名和密码！")
-    
+
     with tab注册:
         新用户名 = st.text_input("用户名", key="reg_user")
         新密码 = st.text_input("密码", type="password", key="reg_pass")
@@ -151,27 +191,22 @@ def 显示登录界面():
             else:
                 st.warning("请填写所有信息！")
 
+    with tab管理:
+        管理密码 = st.text_input("管理员密码", type="password", key="admin_pass")
+        if st.button("进入后台", use_container_width=True, key="admin_btn"):
+            if 管理密码 == "YHYYHY":
+                st.session_state.是管理员 = True
+                st.rerun()
+            else:
+                st.error("密码错误！")
+
 # ===== 主程序 =====
-st.markdown("""
-<style>
-.stButton > button {
-    background: linear-gradient(90deg, #6C63FF, #3ECFCF);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-if "已登录" not in st.session_state:
-    st.session_state.已登录 = False
-
-if not st.session_state.已登录:
+if st.session_state.是管理员:
+    显示管理员后台()
+elif not st.session_state.已登录:
     显示登录界面()
 else:
     用户名 = st.session_state.当前用户
-    
     col1, col2 = st.columns([4, 1])
     with col1:
         st.title("🤖 AI职业分析器")
