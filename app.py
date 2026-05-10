@@ -134,6 +134,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# 分享功能
+st.divider()
+st.write("### 📤 分享结果")
+分享文本 = f"""
+🤖 AI职业分析报告
+
+姓名：{名字} | 年龄：{年龄}
+技能：{技能} | 目标行业：{行业}
+
+📊 综合评分：
+{chr(10).join([f"• {k}：{v}分" for k, v in 评分.items()])}
+
+🔗 立即分析你的职业：
+https://ai-career-analyzer1.streamlit.app
+"""
+st.text_area("复制以下内容发给朋友👇", 分享文本, height=200)
+
 if "已登录" not in st.session_state:
     st.session_state.已登录 = False
 if "是管理员" not in st.session_state:
