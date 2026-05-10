@@ -71,7 +71,8 @@ def AI职业分析(名字, 年龄, 技能, 行业):
     姓名：{名字}，年龄：{年龄}，技能：{技能}，目标行业：{行业}
     请给出：1.优势分析 2.当前最大的挑战 3.未来6个月行动计划 4.适合的AI创业方向
     最后单独输出JSON（不要加代码块）：
-    {{"技能匹配度": 85, "市场需求": 90, "创业潜力": 75, "发展速度": 80}}
+    最后单独输出JSON（不要加代码块），根据实际分析给出0-100的真实分数：
+{{"技能匹配度": 0, "市场需求": 0, "创业潜力": 0, "发展速度": 0}}
     """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
     data = json.dumps({"contents": [{"parts": [{"text": 提示词}]}]}).encode("utf-8")
@@ -86,7 +87,7 @@ def 解析评分(文本):
         end = 文本.rfind("}") + 1
         return json.loads(文本[start:end])
     except:
-        return {"技能匹配度": 80, "市场需求": 75, "创业潜力": 70, "发展速度": 75}
+        return {"技能匹配度": 0, "市场需求": 0, "创业潜力": 0, "发展速度": 0}
 
 def 显示评分(评分):
     import plotly.graph_objects as go
