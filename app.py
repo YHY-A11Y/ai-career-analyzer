@@ -225,7 +225,7 @@ else:
             st.session_state.已登录 = False
             st.rerun()
 
-    tab1, tab2, tab3 = st.tabs(["📝 手动分析", "📄 上传简历", "📋 历史记录"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📝 手动分析", "📄 上传简历", "🎤 模拟面试", "📋 历史记录"])
 
     with tab1:
         col1, col2 = st.columns(2)
@@ -291,8 +291,108 @@ else:
                         显示分享(评分)
                     except Exception as e:
                         st.error(f"连接失败：{e}")
-
     with tab3:
+        st.write("### 🎤 AI模拟面试")
+        st.write("输入目标岗位，AI扮演面试官考你！")
+        
+        目标岗位 = st.text_input("目标岗位（如：数据分析师、产品经理）")
+        
+        if "面试题目" not in st.session_state:
+            st.session_state.面试题目 = []
+        if "面试答案" not in st.session_state:
+            st.session_state.面试答案 = []
+        if "当前题号" not in st.session_state:
+            st.session_state.当前题号 = 0
+        if "面试完成" not in st.session_state:
+            st.session_state.面试完成 = False
+        if "面试开始" not in st.session_state:
+            st.session_state.面试开始 = False
+
+        if st.button("开始面试 🚀", use_container_width=True) and 目标岗位:
+            with st.spinner("AI正在准备面试题目..."):
+                try:
+                    提示词 = f"""
+                    你是一个{目标岗位}岗位的面试官。
+                    请生成5个面试问题，涵盖专业知识、项目经验、职业规划。
+                    只输出问题列表，每行一个问题，用数字编号，不要其他内容。
+                    """
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
+                    data = json.dumps({"contents": [{"parts": [{"text": 提示词}]}]}).encode("utf-8")
+                    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                    with urllib.request.urlopen(req, timeout=60) as response:
+                        result = json.loads(response.read().decode("utf-8"))
+                        题目文本 = result["candidates"][0]["content"]["parts"][0]["text"]
+                    
+                    题目列表 = [行.strip() for 行 in 题目文本.strip().split("\n") if 行.strip()]
+                    st.session_state.面试题目 = 题目列表
+                    st.session_state.面试答案 = []
+                    st.session_state.当前题号 = 0
+                    st.session_state.面试完成 = False
+                    st.session_state.面试开始 = True
+                    st.session_state.目标岗位 = 目标岗位
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"连接失败：{e}")
+
+        if st.session_state.面试开始 and not st.session_state.面试完成:
+            题号 = st.session_state.当前题号
+            总题数 = len(st.session_state.面试题目)
+            
+            st.progress((题号) / 总题数)
+            st.write(f"**第 {题号+1} / {总题数} 题**")
+            st.info(st.session_state.面试题目[题号])
+            
+            回答 = st.text_area("你的回答：", key=f"answer_{题号}", height=150)
+            
+            if st.button("提交回答 ➡️", use_container_width=True):
+                if 回答.strip():
+                    st.session_state.面试答案.append(回答)
+                    if 题号 + 1 >= 总题数:
+                        st.session_state.面试完成 = True
+                    else:
+                        st.session_state.当前题号 += 1
+                    st.rerun()
+                else:
+                    st.warning("请输入回答！")
+
+        if st.session_state.面试完成:
+            st.success("🎉 面试完成！AI正在评分...")
+            
+            问答记录 = ""
+            for i, (题, 答) in enumerate(zip(st.session_state.面试题目, st.session_state.面试答案)):
+                问答记录 += f"问题{i+1}：{题}\n回答：{答}\n\n"
+            
+            with st.spinner("AI正在分析你的表现..."):
+                try:
+                    提示词 = f"""
+                    以下是应聘{st.session_state.目标岗位}岗位的面试问答记录：
+                    {问答记录}
+                    
+                    请给出：
+                    1. 整体表现评价
+                    2. 每题的具体点评和改进建议
+                    3. 综合面试评分（0-100分）
+                    4. 三个最需要改进的地方
+                    """
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
+                    data = json.dumps({"contents": [{"parts": [{"text": 提示词}]}]}).encode("utf-8")
+                    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                    with urllib.request.urlopen(req, timeout=60) as response:
+                        result = json.loads(response.read().decode("utf-8"))
+                        评价 = result["candidates"][0]["content"]["parts"][0]["text"]
+                    
+                    st.markdown(评价)
+                    
+                    if st.button("重新面试 🔄", use_container_width=True):
+                        st.session_state.面试开始 = False
+                        st.session_state.面试完成 = False
+                        st.session_state.面试题目 = []
+                        st.session_state.面试答案 = []
+                        st.session_state.当前题号 = 0
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"连接失败：{e}")
+    with tab4:
         st.write("### 我的历史记录")
         历史 = 读取历史(用户名)
         if not 历史:
