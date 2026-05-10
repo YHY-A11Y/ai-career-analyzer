@@ -216,7 +216,7 @@ else:
             st.session_state.已登录 = False
             st.rerun()
 
-    tab1, tab2 = st.tabs(["📝 开始分析", "📋 历史记录"])
+    tab1, tab2, tab3 = st.tabs(["📝 手动分析", "📄 上传简历", "📋 历史记录"])
 
     with tab1:
         col1, col2 = st.columns(2)
@@ -244,8 +244,55 @@ else:
                         st.error(f"连接失败：{e}")
             else:
                 st.warning("请填写所有信息！")
-
     with tab2:
+        st.write("上传你的简历PDF，AI自动解析并分析！")
+        上传文件 = st.file_uploader("上传简历（PDF格式）", type=["pdf"])
+    
+    if 上传文件:
+        import PyPDF2
+        pdf读取器 = PyPDF2.PdfReader(上传文件)
+        简历文本 = ""
+        for 页 in pdf读取器.pages:
+            简历文本 += 页.extract_text()
+        
+        st.success("简历读取成功！")
+        with st.expander("查看简历内容"):
+            st.write(简历文本[:500] + "...")
+        
+        if st.button("AI分析简历 🚀", use_container_width=True):
+            with st.spinner("AI正在分析简历，请稍等..."):
+                try:
+                    提示词 = f"""
+                    请分析以下简历内容，给出职业发展建议：
+                    {简历文本[:2000]}
+                    
+                    请给出：
+                    1. 此人的核心优势
+                    2. 简历存在的不足
+                    3. 职业发展建议
+                    4. 适合的AI创业方向
+                    
+                    最后单独输出JSON（不要加代码块）：
+                    {{"技能匹配度": 85, "市场需求": 90, "创业潜力": 75, "发展速度": 80}}
+                    """
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
+                    data = json.dumps({
+                        "contents": [{"parts": [{"text": 提示词}]}]
+                    }).encode("utf-8")
+                    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                    with urllib.request.urlopen(req, timeout=60) as response:
+                        result = json.loads(response.read().decode("utf-8"))
+                        结果 = result["candidates"][0]["content"]["parts"][0]["text"]
+                    
+                    st.success("分析完成！")
+                    评分 = 解析评分(结果)
+                    显示评分(评分)
+                    st.divider()
+                    文字部分 = 结果[:结果.rfind("{")]
+                    st.markdown(文字部分)
+                except Exception as e:
+                    st.error(f"连接失败：{e}")
+    with tab3:
         st.write("### 我的历史记录")
         历史 = 读取历史(用户名)
         if not 历史:
