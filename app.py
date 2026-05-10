@@ -89,6 +89,26 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+# 密码保护
+def 检查登录():
+    if "已登录" not in st.session_state:
+        st.session_state.已登录 = False
+    
+    if not st.session_state.已登录:
+        st.title("🔐 AI职业分析器")
+        st.write("请输入密码以继续")
+        密码 = st.text_input("密码", type="password")
+        if st.button("登录"):
+            if 密码 == "aicreate2024":
+                st.session_state.已登录 = True
+                st.rerun()
+            else:
+                st.error("密码错误！")
+        st.stop()
+
+检查登录()
+
 st.title("🤖 AI职业分析器")
 
 tab1, tab2 = st.tabs(["📝 开始分析", "📋 历史记录"])
