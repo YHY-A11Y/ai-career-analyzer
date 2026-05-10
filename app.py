@@ -73,6 +73,22 @@ def 显示评分(评分):
             st.progress(分数 / 100)
 
 # 网页界面
+st.markdown("""
+<style>
+.stButton > button {
+    background: linear-gradient(90deg, #6C63FF, #3ECFCF);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+}
+.stMetric {
+    background-color: #1E2130;
+    border-radius: 10px;
+    padding: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
 st.title("🤖 AI职业分析器")
 
 tab1, tab2 = st.tabs(["📝 开始分析", "📋 历史记录"])
