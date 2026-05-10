@@ -134,13 +134,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 分享功能
-st.divider()
-st.write("### 📤 分享结果")
-评分文字 = "\n".join([f"• {k}：{v}分" for k, v in 评分.items()])
-分享文本 = "🤖 AI职业分析报告\n\n📊 综合评分：\n" + 评分文字 + "\n\n🔗 立即分析你的职业：\nhttps://ai-career-analyzer1.streamlit.app"
-st.text_area("复制以下内容发给朋友👇", 分享文本, height=200)
-
 if "已登录" not in st.session_state:
     st.session_state.已登录 = False
 if "是管理员" not in st.session_state:
